@@ -6,25 +6,24 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/session"
 	"gorm.io/gorm"
 )
 
 type TransaksiController struct {
 	// Declare variables
 	Db    *gorm.DB
-	store *session.Store
 }
 
-func InitTransaksiController(s *session.Store) *TransaksiController {
+func InitTransaksiController() *TransaksiController {
 	db := database.InitDb()
 	// gorm sync
 	db.AutoMigrate(&models.Transaksi{})
 
-	return &TransaksiController{Db: db, store: s}
+	return &TransaksiController{Db: db}
 }
 
-// GET /checkout/:userid
+
+
 func (controller *TransaksiController) InsertToTransaksi(c *fiber.Ctx) error {
 	params := c.AllParams() // "{"id": "1"}"
 
@@ -33,27 +32,39 @@ func (controller *TransaksiController) InsertToTransaksi(c *fiber.Ctx) error {
 	var transaksi models.Transaksi
 	var cart models.Cart
 
-	// Find the product first,
-	err := models.ReadAllProductsInCart(controller.Db, &cart, intUserId)
-	if err != nil {
+	// Find the cart
+	if err := models.ReadCartById(controller.Db, &cart, intUserId); err != nil {
 		return c.SendStatus(500) // http 500 internal server error
 	}
 
-	errs := models.CreateTransaksi(controller.Db, &transaksi, uint(intUserId), cart.Products)
-	if errs != nil {
+	// Find the product first,
+	if err := models.ReadCartById(controller.Db, &cart, intUserId); err != nil {
+		return c.SendStatus(500) // http 500 internal server error
+	}
+
+	//if cart = 0
+	if len(cart.Products) == 0 {
+		return c.SendStatus(400)
+	}
+
+	//membuat transaksi
+	if err := models.CreateTransaksi(controller.Db, &transaksi, uint(intUserId), cart.Products); err != nil {
 		return c.SendStatus(500) // http 500 internal server error
 	}
 
 	// Delete products in cart
-	// errss := models.UpdateCart(controller.Db, cart.Products, &cart, uint(intUserId))
-	// if errss != nil {
-	// 	return c.SendStatus(500) // http 500 internal server error
-	// }
+	if err := models.UpdateCart(controller.Db, cart.Products, &cart, uint(intUserId));err != nil {
+		return c.SendStatus(500) // http 500 internal server error
+	}
 
-	return c.Redirect("/products")
+	// if succeed
+	return c.JSON(fiber.Map{
+		"status":  200,
+		"message": "Berhasil Melakukan Checkout",
+	})
 }
 
-// GET /historytransaksi/:userid
+
 func (controller *TransaksiController) GetTransaksi(c *fiber.Ctx) error {
 	params := c.AllParams() // "{"id": "1"}"
 
@@ -64,14 +75,14 @@ func (controller *TransaksiController) GetTransaksi(c *fiber.Ctx) error {
 	if err != nil {
 		return c.SendStatus(500) // http 500 internal server error
 	}
-	return c.Render("transaksi", fiber.Map{
+	return c.JSON(fiber.Map{
 		"Title":      "History Transaksi",
 		"Transaksis": transaksis,
 	})
 
 }
 
-// GET /history/detail/:transaksiid
+
 func (controller *TransaksiController) DetailTransaksi(c *fiber.Ctx) error {
 	params := c.AllParams() // "{"id": "1"}"
 
