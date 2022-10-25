@@ -83,7 +83,7 @@ func (controller *AuthController) LoginPosted(c *fiber.Ctx) error {
 // POST /register
 func (controller *AuthController) AddRegisteredUser(c *fiber.Ctx) error {
 	var user models.User
-	// var cart models.Cart
+	var cart models.Cart
 
 	if err := c.BodyParser(&user); err != nil {
 		return c.SendStatus(400) // Bad Request, RegisterForm is not complete

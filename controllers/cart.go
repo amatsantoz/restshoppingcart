@@ -6,26 +6,23 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/session"
 	"gorm.io/gorm"
 )
 
 type CartController struct {
 	// Declare variables
 	Db    *gorm.DB
-	store *session.Store
 }
 
-func InitCartController(s *session.Store) *CartController {
+func InitCartController() *CartController {
 	db := database.InitDb()
 	// gorm sync
 	db.AutoMigrate(&models.Cart{})
 
-	return &CartController{Db: db, store: s}
+	return &CartController{Db: db}
 }
 
-// GET /addtocart/:cartid/products/:productid
-func (controller *CartController) InsertToCart(c *fiber.Ctx) error {
+func (controller *CartController) InsertProductToCart(c *fiber.Ctx) error {
 	params := c.AllParams() // "{"id": "1"}"
 
 	intCartId, _ := strconv.Atoi(params["cartid"])
@@ -34,29 +31,42 @@ func (controller *CartController) InsertToCart(c *fiber.Ctx) error {
 	var cart models.Cart
 	var product models.Product
 
-	// Find the product first,
-	err := models.ReadProductById(controller.Db, &product, intProductId)
-	if err != nil {
-		return c.SendStatus(500) // http 500 internal server error
+	// Find the product first, Mencari product dengan idproduct = xx
+	if err := models.ReadProductById(controller.Db, &product, intProductId); err != nil {
+		// return c.SendStatus(500) // http 500 internal server error
+		return c.JSON(fiber.Map{
+			"status":  500,
+			"message": "Tidak dapat menemukan Product dengan Id " + params["productid"] + ", Gagal menambahkan ke Shopping Cart ",
+		})
 	}
 
-	// Then find the cart
-	errs := models.ReadCartById(controller.Db, &cart, intCartId)
-	if errs != nil {
-		return c.SendStatus(500) // http 500 internal server error
+	// Then find the cart, mencari cart denan idcart = xx
+	if err := models.ReadCartById(controller.Db, &cart, intCartId); err != nil {
+		// return c.SendStatus(500) // http 500 internal server error
+		return c.JSON(fiber.Map{
+			"status":  500,
+			"message": "Tidak dapat menemukan Cart dengan Id " + params["cartid"] + ", Gagal menambahkan ke Shopping Cart ",
+		})
 	}
 
 	// Finally, insert the product to cart
-	errss := models.InsertProductToCart(controller.Db, &cart, &product)
-	if errss != nil {
-		return c.SendStatus(500) // http 500 internal server error
+	if err := models.InsertProductToCart(controller.Db, &cart, &product); err != nil {
+		// return c.SendStatus(500) // http 500 internal server error
+		return c.JSON(fiber.Map{
+			"status":  500,
+			"message": "Internal Server Error, Gagal menambahkan ke Shopping Cart ",
+		})
 	}
 
-	return c.Redirect("/products")
+	// if succeed
+	return c.JSON(fiber.Map{
+		"status":  200,
+		"message": "Berhasil Menambahkan Product dengan Id " + params["productid"] + " ke Shopping Cart " + params["cartid"],
+	})
 }
 
-// GET /shoppingcart/:cartid
-func (controller *CartController) GetShoppingCart(c *fiber.Ctx) error {
+
+func (controller *CartController) GetCart(c *fiber.Ctx) error {
 	params := c.AllParams() // "{"id": "1"}"
 
 	intCartId, _ := strconv.Atoi(params["cartid"])
@@ -67,15 +77,8 @@ func (controller *CartController) GetShoppingCart(c *fiber.Ctx) error {
 		return c.SendStatus(500) // http 500 internal server error
 	}
 
-	sess, err := controller.store.Get(c)
-	if err != nil {
-		panic(err)
-	}
-	val := sess.Get("userId")
-
-	return c.Render("shoppingcart", fiber.Map{
-		"Title":    "Detail Product",
-		"Products": cart.Products,
-		"UserId":   val,
+	return c.JSON(fiber.Map{
+		"Message":  "Shopping Cart dengan Id " + params["cartid"],
+		"Keranjang": cart.Products,
 	})
 }

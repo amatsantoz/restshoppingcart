@@ -40,8 +40,8 @@ func main() {
 	prod.Get("/detail/:id", prodController.DetailProduct)
 	prod.Post("/ubah/:id",  prodController.AddUpdatedProduct)
 	prod.Get("/hapus/:id",  prodController.DeleteProduct)
-	prod.Get("/addtocart/:cartid/product/:productid",  cartController.InsertToCart)
-	cart.Get("/:cartid",  cartController.GetShoppingCart)
+	prod.Get("/addtocart/:cartid/product/:productid",  cartController.InsertProductToCart)
+	cart.Get("/:cartid",  cartController.GetCart)
 	
 	// Middleware to check login
 	// CheckLogin := func(c *fiber.Ctx) error {

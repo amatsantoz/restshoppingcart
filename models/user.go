@@ -10,7 +10,7 @@ type User struct {
 	Username   string `form:"username" json: "username" validate:"required"`
 	Email      string `form:"email" json: "email" validate:"required"`
 	Password   string `form:"password" json: "password" validate:"required"`
-	Cart     []Cart    `gorm:"foreignKey:User_Fk"`
+	Cart     	Cart    
 	// Cart       Cart
 	// Transaksis []Transaksi
 }

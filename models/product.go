@@ -11,6 +11,7 @@ type Product struct {
 	Image      string       `form:"image" json: "image" validate:"required"`
 	Quantity   int          `form:"quantity" json: "quantity" validate:"required"`
 	Price      float32      `form:"price" json: "price" validate:"required"`
+	Carts      []*Cart      `gorm:"many2many:cart_products;"`
 }
 
 // CRUD
