@@ -24,24 +24,33 @@ func main() {
 	authController := controllers.InitAuthController()
 	prodController := controllers.InitProductController()
 	cartController := controllers.InitCartController()
+	transaksiController := controllers.InitTransaksiController()
 	
 	app.Post("/register", authController.AddRegisteredUser)
 	app.Post("/login", authController.LoginPosted)
 	
 	prod := app.Group("/products")
-	cart := app.Group("/shoppingcart")
 	prod.Get("/", prodController.GetAllProduct)
+	prod.Get("/detail/:id", prodController.DetailProduct)
 	
 	app.Use(jwtware.New(jwtware.Config{
 		SigningKey: []byte("mysecretpassword"),
 	}))
 	
 	prod.Post("/create",  prodController.AddPostedProduct)
-	prod.Get("/detail/:id", prodController.DetailProduct)
 	prod.Post("/ubah/:id",  prodController.AddUpdatedProduct)
 	prod.Get("/hapus/:id",  prodController.DeleteProduct)
 	prod.Get("/addtocart/:cartid/product/:productid",  cartController.InsertProductToCart)
+	
+	cart := app.Group("/shoppingcart")
 	cart.Get("/:cartid",  cartController.GetCart)
+	
+	checkout := app.Group("/checkout")
+	checkout.Get("/:userid", transaksiController.InsertToTransaksi)
+	
+	transaksi := app.Group("/transaksi")
+	transaksi.Get("/:userid",  transaksiController.GetTransaksi)
+	transaksi.Get("/detail/:transaksiid",  transaksiController.DetailTransaksi)
 	
 	// Middleware to check login
 	// CheckLogin := func(c *fiber.Ctx) error {
@@ -55,18 +64,12 @@ func main() {
 	// }
 
 	// controllers
-	// transaksiController := controllers.InitTransaksiController()
 
 	// prod.Get("/create",  prodController.AddProduct)
 	// prod.Get("/ubah/:id", prodController.UpdateProduct)
 
 
-	// transaksi := app.Group("/checkout")
-	// transaksi.Get("/:userid", transaksiController.InsertToTransaksi)
 
-	// history := app.Group("/history")
-	// history.Get("/:userid",  transaksiController.GetTransaksi)
-	// history.Get("/detail/:transaksiid",  transaksiController.DetailTransaksi)
 
 	// app.Get("/login", authController.Login)
 	// app.Get("/logout", authController.Logout)

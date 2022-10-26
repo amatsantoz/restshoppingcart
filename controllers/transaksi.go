@@ -3,6 +3,7 @@ package controllers
 import (
 	"achmad/restshoppingcart/database"
 	"achmad/restshoppingcart/models"
+	"fmt"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -37,14 +38,18 @@ func (controller *TransaksiController) InsertToTransaksi(c *fiber.Ctx) error {
 		return c.SendStatus(500) // http 500 internal server error
 	}
 
-	// Find the product first,
-	if err := models.ReadCartById(controller.Db, &cart, intUserId); err != nil {
+	//searcp products in cart
+	if err := models.ReadAllProductsInCart(controller.Db, &cart, intUserId); err != nil {
 		return c.SendStatus(500) // http 500 internal server error
 	}
 
-	//if cart = 0
+	fmt.Println(cart.Products)
+	// Jika Cart kosong
 	if len(cart.Products) == 0 {
-		return c.SendStatus(400)
+		return c.JSON(fiber.Map{
+			"status":  400,
+			"message": "Cart kosong, silahkan isi Product ke Cart terlebih dahulu",
+		})
 	}
 
 	//membuat transaksi
@@ -85,15 +90,16 @@ func (controller *TransaksiController) GetTransaksi(c *fiber.Ctx) error {
 
 func (controller *TransaksiController) DetailTransaksi(c *fiber.Ctx) error {
 	params := c.AllParams() // "{"id": "1"}"
-
 	intTransaksiId, _ := strconv.Atoi(params["transaksiid"])
+	// param := struct {ID uint `params:"transaksiid"`}{}
+  // c.ParamsParser(&param)
 
 	var transaksi models.Transaksi
 	err := models.ReadAllProductsInTransaksi(controller.Db, &transaksi, intTransaksiId)
 	if err != nil {
 		return c.SendStatus(500) // http 500 internal server error
 	}
-	return c.Render("detailtransaksi", fiber.Map{
+	return c.JSON(fiber.Map{
 		"Title":    "History Transaksi",
 		"Products": transaksi.Products,
 	})

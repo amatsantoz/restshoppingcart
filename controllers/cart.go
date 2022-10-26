@@ -79,6 +79,6 @@ func (controller *CartController) GetCart(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"Message":  "Shopping Cart dengan Id " + params["cartid"],
-		"Keranjang": cart.Products,
+		"Products": cart.Products,
 	})
 }
